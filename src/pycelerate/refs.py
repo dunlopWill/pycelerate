@@ -24,6 +24,20 @@ MAX_COL = 16384   # XFD
 MAX_ROW = 1048576
 
 
+class _Keep:
+    """Sentinel for :meth:`CellRef._replace`: leave this field as it is.
+
+    ``None`` cannot serve here -- ``sheet=None`` is a real value meaning "no sheet
+    prefix", which is what ``.bare()`` asks for.
+    """
+
+    def __repr__(self) -> str:
+        return "<keep>"
+
+
+_KEEP = _Keep()
+
+
 def col_letter(index: int) -> str:
     """1-based column index to letters: ``1 -> A``, ``27 -> AA``."""
     if not 1 <= index <= MAX_COL:
@@ -109,12 +123,24 @@ class CellRef(Expr):
         return (("$" if self.abs_col else "") + col_letter(self.col)
                 + ("$" if self.abs_row else "") + str(self.row))
 
-    def _replace(self, **kw) -> "CellRef":
-        fields = dict(row=self.row, col=self.col, abs_row=self.abs_row,
-                      abs_col=self.abs_col, sheet=self.sheet, home=self.home)
-        fields.update(kw)
-        row, col = fields.pop("row"), fields.pop("col")
-        return CellRef(row, col, **fields)
+    def _replace(
+        self, *,
+        row: int | _Keep = _KEEP,
+        col: int | _Keep = _KEEP,
+        abs_row: bool | _Keep = _KEEP,
+        abs_col: bool | _Keep = _KEEP,
+        sheet: str | None | _Keep = _KEEP,
+        home: str | None | _Keep = _KEEP,
+    ) -> "CellRef":
+        """A copy of this reference with the named fields changed."""
+        return CellRef(
+            self.row if isinstance(row, _Keep) else row,
+            self.col if isinstance(col, _Keep) else col,
+            abs_row=self.abs_row if isinstance(abs_row, _Keep) else abs_row,
+            abs_col=self.abs_col if isinstance(abs_col, _Keep) else abs_col,
+            sheet=self.sheet if isinstance(sheet, _Keep) else sheet,
+            home=self.home if isinstance(home, _Keep) else home,
+        )
 
     def offset(self, rows: int = 0, cols: int = 0) -> "CellRef":
         """A new reference moved by ``rows`` down and ``cols`` right."""
@@ -220,7 +246,13 @@ class RangeRef(Expr):
     # this module for its own type checks.
     def sum(self): return self._fn("SUM")
     def average(self): return self._fn("AVERAGE")
-    def count(self): return self._fn("COUNT")
+
+    # NOTE: this shadows str.count, so RangeRef is the one Expr subclass where
+    # "expr.count(substring)" raises instead of counting characters.  Kept because
+    # .count() is documented API and renaming it would break callers; the
+    # alternative, dispatching on the argument, would be worse.  Reach for
+    # F.COUNT(rng) if the shadowing ever bites.
+    def count(self): return self._fn("COUNT")  # pyright: ignore[reportIncompatibleMethodOverride]
     def counta(self): return self._fn("COUNTA")
     def min(self): return self._fn("MIN")
     def max(self): return self._fn("MAX")

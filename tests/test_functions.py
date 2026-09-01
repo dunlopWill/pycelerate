@@ -82,10 +82,12 @@ def test_dynamic_array_functions_get_the_worksheet_prefix():
 
 
 def test_every_table_entry_renders_with_its_prefix():
+    # check=False: this is about the prefix, not the argument count, and many of
+    # these names legitimately require arguments.
     for name in _XLFN:
-        assert Func(name).text == f"_xlfn.{name}()"
+        assert Func(name, check=False).text == f"_xlfn.{name}()"
     for name in _XLWS:
-        assert Func(name).text == f"_xlfn._xlws.{name}()"
+        assert Func(name, check=False).text == f"_xlfn._xlws.{name}()"
     assert _XLFN.isdisjoint(_XLWS)
 
 

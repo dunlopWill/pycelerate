@@ -19,3 +19,9 @@ dev = [
 [build-system]
 requires = ["uv_build>=0.12.5,<0.13.0"]
 build-backend = "uv_build"
+
+
+[tool.pytest.ini_options]
+markers = [
+    "slow: evaluates a workbook in headless LibreOffice; deselect with -m 'not slow'",
+]

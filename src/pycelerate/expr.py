@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import datetime as _dt
 from decimal import Decimal
+from typing import Self
 
 __all__ = [
     "Expr", "BinOp", "UnaryOp", "Lit", "Raw",
@@ -48,11 +49,13 @@ class Expr(str):
     _text: str
     _prec: int
 
-    def __new__(cls, text: str, prec: int = P_ATOM) -> "Expr":
+    def __new__(cls, text: str, prec: int = P_ATOM) -> Self:
         return cls._make(text, prec)
 
     @classmethod
-    def _make(cls, text: str, prec: int) -> "Expr":
+    def _make(cls, text: str, prec: int) -> Self:
+        # Returning Self, not Expr, is what lets each subclass assign its own
+        # attributes to the result and return it as its own type.
         obj = str.__new__(cls, "=" + text)
         obj._text = text
         obj._prec = prec
