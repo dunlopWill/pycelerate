@@ -1,7 +1,7 @@
 [project]
 name = "pycelerate"
 version = "0.1.0"
-description = "Add your description here"
+description = "Build Excel formulas with Python operators, for openpyxl"
 readme = "README.md"
 authors = [
     { name = "inkie", email = "willmdunlop@gmail.com" }
@@ -9,8 +9,12 @@ authors = [
 requires-python = ">=3.14"
 dependencies = []
 
-[project.scripts]
-pycelerate = "pycelerate:main"
+
+[dependency-groups]
+dev = [
+    "openpyxl>=3.1",
+    "pytest>=8",
+]
 
 [build-system]
 requires = ["uv_build>=0.12.5,<0.13.0"]
