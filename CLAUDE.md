@@ -5,18 +5,43 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-uv sync                                   # install (dev group: openpyxl, pytest)
+uv sync                                   # install (dev = lint + test + typecheck groups)
+just check                                # ruff, pyright, ty, pytest -- the whole gate
+just fix                                  # ruff --fix (lint only; see below)
+
 uv run pytest                             # full suite (147 tests, ~6s)
 uv run pytest -m "not slow"               # skip LibreOffice recalc (~0.5s)
 uv run pytest -m slow                     # only the recalc tests
 uv run pytest tests/test_precedence.py    # one file
 uv run pytest -k "parens"                 # one pattern
-uvx pyright src tests                     # type stubs (see functions.pyi)
+
+uv run pyright                            # authoritative; must stay 0 errors
+uv run ty check .                         # must stay "All checks passed!"
+uv run ruff check .
+uv run --group docs zensical build --clean
 ```
 
-Requires Python >=3.14. No linter or formatter is configured. `pyright src tests`
-is clean and should stay that way — the package ships `py.typed`, so its own type
-errors would surface in consumers' editors.
+Requires Python >=3.11. **3.11 is the binding floor because of `typing.Self` in
+`expr.py`** — nothing else here needs more than 3.8, and every module carries
+`from __future__ import annotations`. CI tests 3.11 through 3.14. Do not raise the
+floor without a reason that names a specific language feature.
+
+**Ruff lints; `ruff format` is deliberately not run.** Formatting this codebase
+rewrites 1038 of 1944 lines — the compact one-line methods in `expr.py` and
+`refs.py`, the grouped `__all__`, the `parametrize` blocks — all of which are the
+intended style. There is no format step in CI and no `just` target for it.
+
+**Both type checkers gate CI, and pyright is authoritative**: the package ships
+`py.typed`, so its own type errors surface in consumers' editors, and
+`functions.pyi` is tuned to pyright's behaviour. ty is kept clean via scoped
+`[[tool.ty.overrides]]` blocks in `pyproject.toml` rather than inline comments —
+the nine lines in `test_validation.py` that need suppressing already carry a
+`# pyright: ignore` and run to ~100 chars, so a second ignore comment would just
+trade type diagnostics for `E501`s.
+
+Coverage runs with `branch = false` on purpose: coverage.py reads each compact
+one-line `def f(self, other): return ...` as an arc that never falls through, so
+`expr.py` alone reports 26 phantom partial branches. Line coverage is 93%.
 
 ## Architecture
 
@@ -101,11 +126,40 @@ it is the reason `dependencies = []`. openpyxl is a dev-only dep used by
   because `sheet=None` is a real value meaning "no prefix" (what `.bare()` asks
   for). Keep the parameters explicit — the old `**kw` version type-checked nothing.
 - `RangeRef.count()` deliberately shadows `str.count`, so that one subclass raises
-  on `expr.count(substring)`. It carries a pyright ignore; renaming it would be a
-  breaking API change.
+  on `expr.count(substring)`. It carries a pyright ignore and a `[[tool.ty.overrides]]`
+  entry for `refs.py`; renaming it would be a breaking API change.
 - Tests are organised by concern, not by module; `test_precedence.py` is the
   load-bearing one — wrong parens give silently wrong numbers rather than errors.
 - `test_recalc.py` evaluates generated workbooks in headless LibreOffice — the only
   check that catches formulas which are well-formed but *mean* the wrong thing.
   It carries a negative control (`test_the_harness_can_actually_detect_a_bad_formula`);
   keep it, or the whole file could silently stop testing anything.
+
+## Docs and release
+
+Prose lives in `docs/`, not in `README.md`. The README is a short pitch that links
+to the site — if you are adding or changing documentation, edit the page in `docs/`
+and only touch the README if the pitch itself changed. `docs/api.md` is generated
+from docstrings by mkdocstrings, so public API docstrings *are* the reference.
+
+| Page | Covers |
+|---|---|
+| `docs/index.md` | pitch, quickstart, why, who it is for |
+| `docs/installation.md` | install, supported versions, from source |
+| `docs/usage.md` | writing values, references, operators, functions, `str`-subclass caveats |
+| `docs/validation.md` | the three layers, and what none of them catch |
+| `docs/api.md` | `::: pycelerate`, generated |
+
+`__version__` is read from the installed distribution metadata, so `pyproject.toml`
+is the only place a version number is edited.
+
+Releasing: `uv version --bump <part>`, commit, then `just release`. That finalises
+`CHANGELOG/unreleased.md` into `CHANGELOG/<version>.md`, tags, and pushes — and the
+tag triggers `publish.yml`, which publishes to PyPI. **Do not run `just release`
+speculatively.** Record user-visible changes in `CHANGELOG/unreleased.md` as they
+land.
+
+CI (`.github/workflows/ci.yml`) has a `recalc` job that installs LibreOffice and
+runs `pytest -m slow`. It asserts `soffice --version` first, because
+`tests/test_recalc.py` skips itself when LibreOffice is missing and a silently
+skipped job looks exactly like a passing one.

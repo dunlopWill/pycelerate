@@ -21,12 +21,19 @@ Expressions are ``str`` subclasses whose value is the finished formula, so they 
 be assigned straight to an openpyxl cell.  Nothing here imports openpyxl.
 """
 
+from importlib.metadata import PackageNotFoundError, version
+
 from .expr import BinOp, Expr, Lit, Raw, UnaryOp, lit
 from .functions import F, Func
 from .refs import CellRef, RangeRef, Ref, cell, col_index, col_letter, rng
 from .sheet import Sheet
 
-__version__ = "0.1.0"
+try:
+    # Read from the installed distribution, so pyproject.toml is the only place a
+    # version is ever edited -- `uv version --bump` and `just release` depend on it.
+    __version__ = version("pycelerate")
+except PackageNotFoundError:  # running from a source tree that was never installed
+    __version__ = "0.0.0+unknown"
 
 __all__ = [
     "cell", "rng", "Ref", "F", "Sheet",
