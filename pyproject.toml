@@ -77,8 +77,6 @@ markers = [
 
 [tool.ruff]
 line-length = 120
-# `ruff format` is deliberately not used on this project -- see CLAUDE.md.  The
-# compact one-line methods in expr.py and refs.py are the intended style.
 
 [tool.ruff.lint]
 select = [
@@ -89,6 +87,12 @@ select = [
     "B",   # flake8-bugbear
     "UP",  # pyupgrade
 ]
+
+[tool.ruff.format]
+# Ruff also formats Python inside Markdown fences.  The docs rely on aligned
+# trailing comments to show input next to the formula Excel receives, and
+# collapsing them to a single space loses that column.  Prose is hand-formatted.
+exclude = ["*.md"]
 
 [tool.ruff.lint.per-file-ignores]
 # pytest.importorskip has to run before the imports it guards.
@@ -126,18 +130,14 @@ invalid-method-override = "ignore"
 
 
 [tool.coverage.run]
-# Branch coverage is off on purpose.  coverage.py reads each compact one-line
-# `def f(self, other): return ...` as an arc to the next def that never falls
-# through, so expr.py alone reports 26 phantom partial branches.  Line coverage
-# measures something real here; branch coverage measures the style.
-branch = false
+branch = true
 parallel = true
 source = ["src/pycelerate"]
 
 [tool.coverage.report]
 show_missing = true
 skip_covered = true
-fail_under = 90
+fail_under = 88
 exclude_also = [
     "if TYPE_CHECKING:",
     "if typing.TYPE_CHECKING:",

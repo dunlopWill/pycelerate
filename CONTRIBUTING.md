@@ -89,17 +89,18 @@ Ready to contribute? Here's how to set up pycelerate for local development.
 
    Now you can make your changes locally.
 
-5. When you're done making changes, verify linting, types, and tests without modifying files:
+5. When you're done making changes, verify formatting, linting, types, and tests without modifying files:
 
    ```sh
    just check
    ```
 
-   Use `just fix` to apply Ruff's automatic lint fixes, or `just fix-and-check` to apply them before verification.
+   Use `just fix` to apply Ruff's formatting and automatic lint fixes, or `just fix-and-check` to apply them before verification.
 
-   **`ruff format` is deliberately not run on this project.** The compact
-   one-line methods in `expr.py` and `refs.py` are the intended style, and
-   reformatting them would rewrite more than half the source. Lint only.
+   Formatting covers Python only. Ruff also formats Python inside Markdown
+   fences, and that is switched off in `[tool.ruff.format]`: the docs use
+   aligned trailing comments to show a call next to the formula Excel receives,
+   and collapsing them to a single space loses the column. Format prose by hand.
 
    Or run the tests alone:
 

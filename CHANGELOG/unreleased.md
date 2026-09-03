@@ -26,8 +26,9 @@ hand them straight to openpyxl.
 ### Project infrastructure
 
 - Requires Python 3.11+, tested on 3.11, 3.12, 3.13 and 3.14.
-- Ruff for linting. `ruff format` is deliberately not used — the compact one-line
-  methods in `expr.py` and `refs.py` are the intended style.
+- Ruff formats and lints, both gating CI. Formatting is Python-only: Ruff's
+  Markdown code-fence formatting is disabled, because the docs use aligned
+  trailing comments to show a call beside the formula Excel receives.
 - Both pyright and ty gate CI. pyright is authoritative, because the package ships
   `py.typed` and its own type errors would surface in consumers' editors.
 - `tests/test_recalc.py` runs in CI against a real LibreOffice install — the only

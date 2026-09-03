@@ -23,15 +23,14 @@ type-check-concise:
 type-check-watch:
     uv run ty check --watch .
 
-# `ruff format` is deliberately not run here -- the compact one-line methods in
-# expr.py and refs.py are the intended style.  See CLAUDE.md.
-
-# Apply automatic lint fixes
+# Apply formatting and automatic lint fixes
 fix:
+    uv run ruff format .
     uv run ruff check . --fix
 
-# Verify linting, types, and tests without modifying source files
+# Verify formatting, linting, types, and tests without modifying source files
 check:
+    uv run ruff format --check .
     uv run ruff check .
     uv run pyright
     uv run ty check .

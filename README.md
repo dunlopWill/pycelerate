@@ -73,8 +73,8 @@ just recalc               # only those (needs `soffice` on PATH)
 just testall              # every supported Python version
 ```
 
-`ruff format` is deliberately not used on this project. See
-[CONTRIBUTING.md](CONTRIBUTING.md) and [CLAUDE.md](CLAUDE.md).
+`just check` is the gate CI runs. See [CONTRIBUTING.md](CONTRIBUTING.md) and
+[CLAUDE.md](CLAUDE.md).
 
 ## License
 

@@ -249,8 +249,8 @@ class RangeRef(Expr):
     # .count() is documented API and renaming it would break callers; the
     # alternative, dispatching on the argument, would be worse.  Reach for
     # F.COUNT(rng) if the shadowing ever bites.
-    def count(self):
-        return self._fn("COUNT")  # pyright: ignore[reportIncompatibleMethodOverride]
+    def count(self):  # pyright: ignore[reportIncompatibleMethodOverride]
+        return self._fn("COUNT")
 
     def counta(self):
         return self._fn("COUNTA")

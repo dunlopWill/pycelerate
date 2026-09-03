@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 uv sync                                   # install (dev = lint + test + typecheck groups)
 just check                                # ruff, pyright, ty, pytest -- the whole gate
-just fix                                  # ruff --fix (lint only; see below)
+just fix                                  # ruff format + ruff check --fix
 
 uv run pytest                             # full suite (147 tests, ~6s)
 uv run pytest -m "not slow"               # skip LibreOffice recalc (~0.5s)
@@ -17,6 +17,7 @@ uv run pytest -k "parens"                 # one pattern
 
 uv run pyright                            # authoritative; must stay 0 errors
 uv run ty check .                         # must stay "All checks passed!"
+uv run ruff format --check .
 uv run ruff check .
 uv run --group docs zensical build --clean
 ```
@@ -26,10 +27,18 @@ Requires Python >=3.11. **3.11 is the binding floor because of `typing.Self` in
 `from __future__ import annotations`. CI tests 3.11 through 3.14. Do not raise the
 floor without a reason that names a specific language feature.
 
-**Ruff lints; `ruff format` is deliberately not run.** Formatting this codebase
-rewrites 1038 of 1944 lines — the compact one-line methods in `expr.py` and
-`refs.py`, the grouped `__all__`, the `parametrize` blocks — all of which are the
-intended style. There is no format step in CI and no `just` target for it.
+**Ruff formats and lints, both gating CI.** Formatting covers Python only. Ruff
+also formats Python inside Markdown fences; that is disabled in
+`[tool.ruff.format]` because the docs use aligned trailing comments to put a call
+next to the formula Excel receives, and collapsing them to one space loses that
+column. Prose is hand-formatted.
+
+**Watch where a `# pyright: ignore` sits when the formatter splits a line.**
+`RangeRef.count` carried its ignore on a one-line `def count(self): return ...`;
+`ruff format` split the line and left the comment on the `return`, while pyright
+anchors `reportIncompatibleMethodOverride` to the `def`. The suppression silently
+stopped applying. The comment now sits on the `def` line, which is stable under
+formatting.
 
 **Both type checkers gate CI, and pyright is authoritative**: the package ships
 `py.typed`, so its own type errors surface in consumers' editors, and
@@ -39,9 +48,10 @@ the nine lines in `test_validation.py` that need suppressing already carry a
 `# pyright: ignore` and run to ~100 chars, so a second ignore comment would just
 trade type diagnostics for `E501`s.
 
-Coverage runs with `branch = false` on purpose: coverage.py reads each compact
-one-line `def f(self, other): return ...` as an arc that never falls through, so
-`expr.py` alone reports 26 phantom partial branches. Line coverage is 93%.
+Coverage runs in branch mode, at 90% against a `fail_under` of 88. (It was off
+while the source used compact one-line `def f(self): return ...` methods, which
+coverage.py read as arcs that never fall through — 26 phantom partials in
+`expr.py` alone. `ruff format` expanded those, so the measurement is real again.)
 
 ## Architecture
 
@@ -126,8 +136,9 @@ it is the reason `dependencies = []`. openpyxl is a dev-only dep used by
   because `sheet=None` is a real value meaning "no prefix" (what `.bare()` asks
   for). Keep the parameters explicit — the old `**kw` version type-checked nothing.
 - `RangeRef.count()` deliberately shadows `str.count`, so that one subclass raises
-  on `expr.count(substring)`. It carries a pyright ignore and a `[[tool.ty.overrides]]`
-  entry for `refs.py`; renaming it would be a breaking API change.
+  on `expr.count(substring)`. Its pyright ignore must stay on the `def` line, and
+  it has a `[[tool.ty.overrides]]` entry for `refs.py`; renaming it would be a
+  breaking API change.
 - Tests are organised by concern, not by module; `test_precedence.py` is the
   load-bearing one — wrong parens give silently wrong numbers rather than errors.
 - `test_recalc.py` evaluates generated workbooks in headless LibreOffice — the only
