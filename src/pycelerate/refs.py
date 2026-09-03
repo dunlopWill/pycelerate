@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import re
 
-from .expr import Expr, P_ATOM, P_REF
+from .expr import P_ATOM, P_REF, Expr
 
 __all__ = ["CellRef", "RangeRef", "Ref", "cell", "rng", "col_letter", "col_index"]
 
@@ -96,7 +96,7 @@ class CellRef(Expr):
     home: str | None
 
     def __new__(cls, row: int, col: int, *, abs_row: bool = False,
-                abs_col: bool = False, sheet=None, home=None) -> "CellRef":
+                abs_col: bool = False, sheet=None, home=None) -> CellRef:
         if not 1 <= row <= MAX_ROW:
             raise ValueError(f"row {row} out of range 1..{MAX_ROW}")
         name = sheet_name(sheet)
@@ -131,7 +131,7 @@ class CellRef(Expr):
         abs_col: bool | _Keep = _KEEP,
         sheet: str | None | _Keep = _KEEP,
         home: str | None | _Keep = _KEEP,
-    ) -> "CellRef":
+    ) -> CellRef:
         """A copy of this reference with the named fields changed."""
         return CellRef(
             self.row if isinstance(row, _Keep) else row,
@@ -142,37 +142,37 @@ class CellRef(Expr):
             home=self.home if isinstance(home, _Keep) else home,
         )
 
-    def offset(self, rows: int = 0, cols: int = 0) -> "CellRef":
+    def offset(self, rows: int = 0, cols: int = 0) -> CellRef:
         """A new reference moved by ``rows`` down and ``cols`` right."""
         return self._replace(row=self.row + rows, col=self.col + cols)
 
-    def shift(self, rows: int = 0, cols: int = 0) -> "CellRef":
+    def shift(self, rows: int = 0, cols: int = 0) -> CellRef:
         return self._replace(
             row=self.row if self.abs_row else self.row + rows,
             col=self.col if self.abs_col else self.col + cols,
         )
 
-    def abs(self) -> "CellRef":
+    def abs(self) -> CellRef:
         """Lock both row and column: ``$B$3``."""
         return self._replace(abs_row=True, abs_col=True)
 
-    def abs_r(self) -> "CellRef":
+    def abs_r(self) -> CellRef:
         """Lock the row only: ``B$3``."""
         return self._replace(abs_row=True)
 
-    def abs_c(self) -> "CellRef":
+    def abs_c(self) -> CellRef:
         """Lock the column only: ``$B3``."""
         return self._replace(abs_col=True)
 
-    def rel(self) -> "CellRef":
+    def rel(self) -> CellRef:
         """Drop all ``$`` locking."""
         return self._replace(abs_row=False, abs_col=False)
 
-    def on(self, sheet) -> "CellRef":
+    def on(self, sheet) -> CellRef:
         """The same cell, qualified with another sheet."""
         return self._replace(sheet=sheet)
 
-    def qualified(self) -> "CellRef":
+    def qualified(self) -> CellRef:
         """Qualify with the sheet this ref came from, for use in another sheet."""
         if self.sheet is not None:
             return self
@@ -183,11 +183,11 @@ class CellRef(Expr):
             )
         return self._replace(sheet=self.home)
 
-    def bare(self) -> "CellRef":
+    def bare(self) -> CellRef:
         """Drop the sheet prefix, keeping the home sheet for later qualification."""
         return self._replace(sheet=None)
 
-    def to(self, other: "CellRef") -> "RangeRef":
+    def to(self, other: CellRef) -> RangeRef:
         """The rectangular range spanning this cell and ``other``."""
         return RangeRef(self, other)
 
@@ -200,7 +200,7 @@ class RangeRef(Expr):
     sheet: str | None
     home: str | None
 
-    def __new__(cls, start, end=None, *, sheet=None, home=None) -> "RangeRef":
+    def __new__(cls, start, end=None, *, sheet=None, home=None) -> RangeRef:
         if end is None:
             raise TypeError("RangeRef needs both a start and an end")
         name = sheet_name(sheet)
@@ -222,10 +222,10 @@ class RangeRef(Expr):
         """The bare ``B3:B10``, without the sheet prefix."""
         return f"{self.start}:{self.end}"
 
-    def on(self, sheet) -> "RangeRef":
+    def on(self, sheet) -> RangeRef:
         return RangeRef(self.start, self.end, sheet=sheet, home=self.home)
 
-    def qualified(self) -> "RangeRef":
+    def qualified(self) -> RangeRef:
         """Qualify with the sheet this range came from."""
         if self.sheet is not None:
             return self
@@ -233,11 +233,11 @@ class RangeRef(Expr):
             raise ValueError(f"{self!r} has no home sheet to qualify with")
         return RangeRef(self.start, self.end, sheet=self.home)
 
-    def bare(self) -> "RangeRef":
+    def bare(self) -> RangeRef:
         """Drop the sheet prefix, keeping the home sheet."""
         return RangeRef(self.start, self.end, home=self.home)
 
-    def shift(self, rows: int = 0, cols: int = 0) -> "RangeRef":
+    def shift(self, rows: int = 0, cols: int = 0) -> RangeRef:
         return RangeRef(_shift_part(self.start, rows, cols),
                         _shift_part(self.end, rows, cols),
                         sheet=self.sheet, home=self.home)

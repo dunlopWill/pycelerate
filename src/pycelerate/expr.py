@@ -83,7 +83,7 @@ class Expr(str):
             return f"({self._text})"
         return self._text
 
-    def shift(self, rows: int = 0, cols: int = 0) -> "Expr":
+    def shift(self, rows: int = 0, cols: int = 0) -> Expr:
         """Return a copy with every *relative* reference moved by ``rows``/``cols``.
 
         Absolute (``$``-locked) components are left alone.  Nodes without references
@@ -118,7 +118,7 @@ class Expr(str):
 
     __rmod__ = __mod__
 
-    def pct(self) -> "Expr":
+    def pct(self) -> Expr:
         """Postfix percent: ``x.pct()`` renders ``x%``."""
         return UnaryOp("%", self, postfix=True)
 
@@ -143,7 +143,7 @@ class Lit(Expr):
 
     _value: object
 
-    def __new__(cls, value) -> "Lit":
+    def __new__(cls, value) -> Lit:
         text, prec = _render_literal(value)
         obj = cls._make(text, prec)
         obj._value = value
@@ -187,7 +187,7 @@ class Raw(Expr):
     ``atomic=True`` when the text is a single self-contained term.
     """
 
-    def __new__(cls, text: str, *, atomic: bool = False) -> "Raw":
+    def __new__(cls, text: str, *, atomic: bool = False) -> Raw:
         return cls._make(text, P_ATOM if atomic else P_CMP)
 
 
@@ -198,7 +198,7 @@ class BinOp(Expr):
     left: Expr
     right: Expr
 
-    def __new__(cls, op: str, left, right, prec: int) -> "BinOp":
+    def __new__(cls, op: str, left, right, prec: int) -> BinOp:
         left, right = lit(left), lit(right)
         text = (
             left._operand(prec)
@@ -209,7 +209,7 @@ class BinOp(Expr):
         obj.op, obj.left, obj.right = op, left, right
         return obj
 
-    def shift(self, rows: int = 0, cols: int = 0) -> "BinOp":
+    def shift(self, rows: int = 0, cols: int = 0) -> BinOp:
         return BinOp(self.op, self.left.shift(rows, cols),
                      self.right.shift(rows, cols), self._prec)
 
@@ -221,7 +221,7 @@ class UnaryOp(Expr):
     operand: Expr
     postfix: bool
 
-    def __new__(cls, op: str, operand, *, postfix: bool = False) -> "UnaryOp":
+    def __new__(cls, op: str, operand, *, postfix: bool = False) -> UnaryOp:
         operand = lit(operand)
         prec = P_PCT if postfix else P_NEG
         body = operand._operand(prec)
@@ -229,5 +229,5 @@ class UnaryOp(Expr):
         obj.op, obj.operand, obj.postfix = op, operand, postfix
         return obj
 
-    def shift(self, rows: int = 0, cols: int = 0) -> "UnaryOp":
+    def shift(self, rows: int = 0, cols: int = 0) -> UnaryOp:
         return UnaryOp(self.op, self.operand.shift(rows, cols), postfix=self.postfix)

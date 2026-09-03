@@ -27,7 +27,7 @@ from __future__ import annotations
 import difflib
 import warnings
 
-from .expr import Expr, P_ATOM, lit
+from .expr import P_ATOM, Expr, lit
 
 __all__ = ["Func", "F", "UnknownFunctionWarning"]
 
@@ -91,7 +91,7 @@ class Func(Expr):
     name: str
     args: tuple
 
-    def __new__(cls, name: str, *args, check: bool = True) -> "Func":
+    def __new__(cls, name: str, *args, check: bool = True) -> Func:
         if check:
             _check_name(name, len(args))
         parts = tuple(lit(a) for a in args)
@@ -100,7 +100,7 @@ class Func(Expr):
         obj.name, obj.args = name, parts
         return obj
 
-    def shift(self, rows: int = 0, cols: int = 0) -> "Func":
+    def shift(self, rows: int = 0, cols: int = 0) -> Func:
         # Already validated when first built -- and shifting cannot change arity.
         return Func(self.name, *(a.shift(rows, cols) for a in self.args), check=False)
 
