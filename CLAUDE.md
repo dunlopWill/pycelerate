@@ -106,7 +106,11 @@ spelled as `_XLFN` spells them or the lookup silently misses;
 `test_every_arity_entry_is_actually_wired_up` catches that by exercising every
 entry.
 
-**`functions.pyi`** — stubs moving the same arity check to edit time. A `.pyi`
+**`functions.pyi`** — stubs moving the same arity check to edit time.
+`test_the_stub_declares_the_same_arity_as_the_table` parses the stub with `ast` and
+compares it to `_ARITY`, because the two state the same counts in forms that cannot
+see each other: the stub is invisible at run time, the table invisible to a checker.
+Editing one alone would otherwise stay green. A `.pyi`
 *replaces* the `.py` for type checkers, so anything importable must be declared
 here too (`_XLFN`, `_ARITY`, `stored_name` are imported by tests). Two rules:
 reference positions are typed `Expr` (so a bare `"A:A"` string is rejected —

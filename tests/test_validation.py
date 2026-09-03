@@ -6,11 +6,13 @@ The design rule throughout: a name we know is checked, a name we do not know is
 left alone, because the set of real Excel functions is open.
 """
 
+import ast
 import warnings
+from pathlib import Path
 
 import pytest
 
-from pycelerate import F, Func, cell, rng
+from pycelerate import F, Func, cell, functions, rng
 from pycelerate.functions import _ARITY, _KNOWN, _XLFN, _XLWS, UnknownFunctionWarning
 
 R = rng("A:A")
@@ -176,3 +178,50 @@ def test_dotted_names_reach_their_arity_entry_through_F():
         F.ERROR__TYPE()
     assert str(F.ERROR__TYPE(C)) == "=ERROR.TYPE(A1)"
     assert str(F.STDEV__S(R)) == "=_xlfn.STDEV.S(A:A)"
+
+
+def _stub_arity():
+    """Read ``(min, max)`` per function out of ``functions.pyi``.
+
+    The stub states the same argument counts as ``_ARITY``, in a form only a type
+    checker reads, so nothing at run time makes the two agree.  Parsing it here is
+    what turns that into a test.
+    """
+    stub_path = Path(functions.__file__).with_suffix(".pyi")
+    assert stub_path.is_file(), f"the type stub is missing: {stub_path}"
+    tree = ast.parse(stub_path.read_text(encoding="utf-8"))
+    cls = next(node for node in ast.walk(tree) if isinstance(node, ast.ClassDef) and node.name == "_Functions")
+
+    bounds = {}
+    for node in cls.body:
+        # Excel names are upper case; this skips __getattr__ and __dir__.
+        if not isinstance(node, ast.FunctionDef) or not node.name[0].isupper():
+            continue
+        args = node.args
+        # "check" is keyword-only, so it lands in kwonlyargs and is not counted.
+        positional = [a for a in args.posonlyargs + args.args if a.arg != "self"]
+        low = len(positional) - len(args.defaults)
+        high = None if args.vararg else len(positional)
+        bounds[node.name] = (low, high)
+    return bounds
+
+
+def test_the_stub_declares_the_same_arity_as_the_table():
+    """functions.pyi and _ARITY encode the same counts; neither one checks the other.
+
+    Editing one and forgetting the other leaves the editor and the interpreter
+    disagreeing about a call -- and both stay green, because the stub is invisible
+    at run time and the table is invisible to a type checker.
+    """
+    stub = _stub_arity()
+    assert stub, "no signatures parsed out of functions.pyi"
+
+    # A stub signature enforcing a count the runtime does not check would mean the
+    # two layers disagree about whether the name is checked at all.
+    assert set(stub) <= set(_ARITY), sorted(set(stub) - set(_ARITY))
+
+    disagree = {name: (got, _ARITY[name]) for name, got in stub.items() if got != _ARITY[name]}
+    assert not disagree, f"stub vs _ARITY (stub, table): {disagree}"
+
+    # Deliberately not asserted the other way: _ARITY covers far more names than the
+    # stub does, and dotted ones like STDEV.S cannot be written as identifiers at all.
