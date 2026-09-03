@@ -19,7 +19,7 @@ guessing about parentheses.
 
 ## Why
 
-Three problems, in the order they actually bite.
+Four problems, in the order they actually bite.
 
 **1. Coordinates drift.** Hand-written formulas name cells twice — once where the
 value is written, once where it is referenced — and nothing connects the two:
@@ -53,6 +53,26 @@ It handles two places where Python and Excel genuinely disagree:
 |---|---|---|---|
 | `a ** b ** c` | `a ** (b ** c)` | `^` is left-associative | `a^(b^c)` |
 | `-a ** 2` | `-(a ** 2)` | unary `-` binds tighter than `^` | `-(a^2)` |
+
+**4. You have to open Excel to remember the arguments.** Does `SUMIFS` take the sum
+range first or last? First — unlike `SUMIF`, which takes it last. A formula written
+as a string gives your editor nothing to work with, so answering that usually means
+a scratch workbook open on the other monitor.
+
+`F.` is an ordinary attribute lookup, so your editor completes it. 263 Excel
+function names are known to it, and the 85 you reach for most carry full signatures,
+so the argument names and order show up as you type:
+
+```python
+F.SUMIF(rng("A:A"), ">5", rng("B:B"))     # range, criteria, sum_range
+F.SUMIFS(rng("B:B"), rng("A:A"), ">5")    # sum_range, criteria_range, criteria
+```
+
+Pass the wrong number and it is flagged in the editor, before you run anything and
+long before Excel would have shown you a `#VALUE!`. The formula gets written where
+you are already working, with the reference material inline. See
+[Validation](validation.md) for what is checked and when, and
+[Usage](usage.md#discovering-functions) for browsing what is available.
 
 ## Is this for you?
 

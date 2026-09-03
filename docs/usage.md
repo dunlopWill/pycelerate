@@ -95,6 +95,44 @@ F.FILTER(rng("A:A"), cond)       # =_xlfn._xlws.FILTER(...)
 parenthesised whenever nested, since its structure is unknown — pass `atomic=True`
 if it is a single self-contained term.
 
+### Discovering functions
+
+You should not need Excel open to write an Excel formula. Three layers of the
+package exist so you don't:
+
+**Completion.** `F.SUM` is an attribute lookup, not a string, so your editor offers
+the names. `dir(F)` returns the 263 it knows, which also gives you tab completion in
+a REPL:
+
+```python
+>>> [n for n in dir(F) if n.startswith("TEXT")]
+['TEXT', 'TEXTAFTER', 'TEXTBEFORE', 'TEXTJOIN', 'TEXTSPLIT']
+```
+
+**Signatures.** 85 of the most-used functions are declared in `functions.pyi` with
+real parameter names, so hovering or typing the opening bracket shows the order —
+which is the part nobody remembers:
+
+```python
+F.SUMIF(rng("A:A"), ">5", rng("B:B"))     # range, criteria, sum_range
+F.SUMIFS(rng("B:B"), rng("A:A"), ">5")    # sum_range, criteria_range, criteria
+```
+
+Those parameters are **positional-only**. The names are there to be read in a
+tooltip, not passed as keywords — `F.SUMIF(range=..., criteria=...)` is an error.
+Excel has no keyword arguments either, so there is nothing sensible to map them to.
+
+**Everything else still works.** The 263 known names are for completion and
+spell-checking, not a gate. Anything outside the set — an add-in, a function newer
+than this release — builds a call with whatever arguments you give it:
+
+```python
+F.BLOOMBERG_BDP(c, "PX_LAST", 1, 2, 3)    # never checked, never blocked
+```
+
+See [Validation](validation.md) for which names are checked and what happens when
+you misspell one.
+
 
 ## Two things worth knowing
 

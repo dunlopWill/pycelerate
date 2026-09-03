@@ -23,7 +23,7 @@ guessing about parentheses.
 
 ## Why
 
-Three problems, in the order they actually bite.
+Four problems, in the order they actually bite.
 
 1. **Coordinates drift.** Hand-written formulas name each cell twice — once where
    the value is written, once where it is referenced — and nothing connects the
@@ -36,6 +36,11 @@ Three problems, in the order they actually bite.
 3. **Precedence goes wrong silently.** Naive concatenation turns
    `(revenue - cost) / revenue` into `=B3-B4/B3` — a wrong number, not an error.
    pycelerate renders an expression tree with Excel's own precedence rules.
+4. **You have to open Excel to remember the arguments.** Does `SUMIFS` take the
+   sum range first or last? A formula written as a string gives your editor
+   nothing to work with. `F.` completes 263 function names, and the 85 you reach
+   for most carry full signatures — so the argument order shows up as you type,
+   and the wrong count is flagged before you run anything.
 
 If you are writing computed **values** into a spreadsheet — `df.to_excel(...)` and
 friends — you need none of this. It is for workbooks that must contain **live
