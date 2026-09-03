@@ -24,8 +24,7 @@ from pycelerate import F, Raw, Sheet
 
 pytestmark = [
     pytest.mark.slow,
-    pytest.mark.skipif(shutil.which("soffice") is None,
-                       reason="LibreOffice (soffice) is not installed"),
+    pytest.mark.skipif(shutil.which("soffice") is None, reason="LibreOffice (soffice) is not installed"),
 ]
 
 # LibreOffice reports Excel's "#NAME?" style for some failures and its own
@@ -41,6 +40,7 @@ def recalc(tmp_path):
     formulas openpyxl wrote have no cached result, so anything that comes back had
     to be calculated.
     """
+
     def run(fill) -> dict[str, str]:
         wb = openpyxl.Workbook()
         ws = wb.active
@@ -52,10 +52,19 @@ def recalc(tmp_path):
         # A private profile keeps this from colliding with a LibreOffice the
         # developer already has open.
         subprocess.run(
-            ["soffice", "--headless",
-             f"-env:UserInstallation=file://{tmp_path / 'profile'}",
-             "--convert-to", "csv", "--outdir", str(tmp_path), str(book)],
-            check=True, capture_output=True, timeout=180,
+            [
+                "soffice",
+                "--headless",
+                f"-env:UserInstallation=file://{tmp_path / 'profile'}",
+                "--convert-to",
+                "csv",
+                "--outdir",
+                str(tmp_path),
+                str(book),
+            ],
+            check=True,
+            capture_output=True,
+            timeout=180,
         )
 
         values = {}
@@ -65,20 +74,22 @@ def recalc(tmp_path):
                     if value != "":
                         values[f"{chr(64 + c)}{r}"] = value
         return values
+
     return run
 
 
 def test_a_model_recalculates_to_the_expected_numbers(recalc):
     """Values, not just the absence of errors -- this is what catches a wrong formula."""
+
     def fill(s):
         rev = s.put("B1", 1000)
         cost = s.put("B2", 600)
-        s.put("B3", rev - cost)                       # 400
-        s.put("B4", (rev - cost) / rev)               # 0.4
+        s.put("B3", rev - cost)  # 400
+        s.put("B4", (rev - cost) / rev)  # 0.4
         s.put("B5", F.IF(rev.gt(cost), "profit", "loss"))
         s.put("B6", F.ROUND(F.SUM(rev, cost) / 3, 2))  # 533.33
-        s.put("B7", -rev ** 2)                        # -1000000, not +1000000
-        s.put("B8", rev & " units")                   # concatenation, not AND
+        s.put("B7", -(rev**2))  # -1000000, not +1000000
+        s.put("B8", rev & " units")  # concatenation, not AND
 
     out = recalc(fill)
     assert out["B3"] == "400"
@@ -97,18 +108,19 @@ def test_precedence_survives_a_real_engine(recalc):
     Python.  Asserting 2^81 rather than (2^3)^4 is the whole point: without the
     parentheses this cell would come back as 4096.
     """
+
     def fill(s):
         a = s.put("A1", 2)
         b = s.put("A2", 3)
         c = s.put("A3", 4)
-        s.put("B1", a ** b ** c)      # 2^(3^4) == 2**81, not (2^3)^4 == 4096
-        s.put("B2", a - (b - c))      # 3, not -5
-        s.put("B3", a / (b / c))      # 2.666..., not 0.1666...
-        s.put("B4", (a + b) * c)      # 20, not 14
-        s.put("B5", -a ** 2)          # -(2^2) == -4, not (-2)^2 == 4
+        s.put("B1", a**b**c)  # 2^(3^4) == 2**81, not (2^3)^4 == 4096
+        s.put("B2", a - (b - c))  # 3, not -5
+        s.put("B3", a / (b / c))  # 2.666..., not 0.1666...
+        s.put("B4", (a + b) * c)  # 20, not 14
+        s.put("B5", -(a**2))  # -(2^2) == -4, not (-2)^2 == 4
 
     out = recalc(fill)
-    assert float(out["B1"]) == pytest.approx(float(2 ** 81))
+    assert float(out["B1"]) == pytest.approx(float(2**81))
     assert out["B2"] == "3"
     assert out["B3"].startswith("2.66")
     assert out["B4"] == "20"
@@ -117,6 +129,7 @@ def test_precedence_survives_a_real_engine(recalc):
 
 def test_future_functions_are_not_name_errors(recalc):
     """The _xlfn prefixing is exactly what stops these being #NAME?."""
+
     def fill(s):
         s.put("A1", 3)
         s.put("A2", 1)
@@ -132,6 +145,7 @@ def test_future_functions_are_not_name_errors(recalc):
 
 def test_no_cell_in_a_wide_sample_reports_an_error(recalc):
     """A broad sweep -- anything that renders to something Excel cannot parse shows here."""
+
     def fill(s):
         rev = s.put("A1", 1200)
         s.put("A2", 0.15)
@@ -154,6 +168,7 @@ def test_the_harness_can_actually_detect_a_bad_formula(recalc):
     Without this, every test above would still pass if the export silently stopped
     carrying computed values.
     """
+
     def fill(s):
         s.put("A1", Raw("NOSUCHFUNCTION(1)"))
         s.put("A2", Raw("SUMIF(B:B)"))

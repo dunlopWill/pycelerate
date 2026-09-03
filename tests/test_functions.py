@@ -31,19 +31,22 @@ def test_range_aggregate_helpers():
     assert str(r.min()) == "=MIN(B3:B10)"
 
 
-@pytest.mark.parametrize("value, expected", [
-    (1, "1"),
-    (-5, "-5"),
-    (1.5, "1.5"),
-    (Decimal("2.50"), "2.50"),
-    (True, "TRUE"),
-    (False, "FALSE"),
-    ("text", '"text"'),
-    ('say "hi"', '"say ""hi"""'),
-    ("", '""'),
-    (dt.date(2026, 9, 1), "DATE(2026,9,1)"),
-    (dt.datetime(2026, 9, 1), "DATE(2026,9,1)"),
-])
+@pytest.mark.parametrize(
+    "value, expected",
+    [
+        (1, "1"),
+        (-5, "-5"),
+        (1.5, "1.5"),
+        (Decimal("2.50"), "2.50"),
+        (True, "TRUE"),
+        (False, "FALSE"),
+        ("text", '"text"'),
+        ('say "hi"', '"say ""hi"""'),
+        ("", '""'),
+        (dt.date(2026, 9, 1), "DATE(2026,9,1)"),
+        (dt.datetime(2026, 9, 1), "DATE(2026,9,1)"),
+    ],
+)
 def test_literals(value, expected):
     assert Lit(value).text == expected
 
@@ -67,12 +70,9 @@ def test_unrenderable_literal_is_rejected():
 
 
 def test_future_functions_get_their_prefix():
-    assert str(F.XLOOKUP(cell("A1"), rng("B:B"), rng("C:C"))) == \
-        "=_xlfn.XLOOKUP(A1,B:B,C:C)"
-    assert str(F.TEXTJOIN(", ", True, rng("A1:A9"))) == \
-        '=_xlfn.TEXTJOIN(", ",TRUE,A1:A9)'
-    assert str(F.IFS(cell("A1").gt(0), "up", True, "down")) == \
-        '=_xlfn.IFS(A1>0,"up",TRUE,"down")'
+    assert str(F.XLOOKUP(cell("A1"), rng("B:B"), rng("C:C"))) == "=_xlfn.XLOOKUP(A1,B:B,C:C)"
+    assert str(F.TEXTJOIN(", ", True, rng("A1:A9"))) == '=_xlfn.TEXTJOIN(", ",TRUE,A1:A9)'
+    assert str(F.IFS(cell("A1").gt(0), "up", True, "down")) == '=_xlfn.IFS(A1>0,"up",TRUE,"down")'
 
 
 def test_dynamic_array_functions_get_the_worksheet_prefix():

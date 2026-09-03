@@ -20,7 +20,7 @@ _ROW_RE = re.compile(r"^(\$?)([1-9][0-9]*)$")
 # start with a digit -- otherwise Excel needs it in single quotes.
 _SAFE_SHEET_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
-MAX_COL = 16384   # XFD
+MAX_COL = 16384  # XFD
 MAX_ROW = 1048576
 
 
@@ -44,7 +44,7 @@ def col_letter(index: int) -> str:
         raise ValueError(f"column index {index} out of range 1..{MAX_COL}")
     letters = ""
     while index:
-        index, rem = divmod(index - 1, 26)   # bijective base-26
+        index, rem = divmod(index - 1, 26)  # bijective base-26
         letters = chr(65 + rem) + letters
     return letters
 
@@ -95,16 +95,13 @@ class CellRef(Expr):
     sheet: str | None
     home: str | None
 
-    def __new__(cls, row: int, col: int, *, abs_row: bool = False,
-                abs_col: bool = False, sheet=None, home=None) -> CellRef:
+    def __new__(
+        cls, row: int, col: int, *, abs_row: bool = False, abs_col: bool = False, sheet=None, home=None
+    ) -> CellRef:
         if not 1 <= row <= MAX_ROW:
             raise ValueError(f"row {row} out of range 1..{MAX_ROW}")
         name = sheet_name(sheet)
-        text = (
-            sheet_prefix(name)
-            + ("$" if abs_col else "") + col_letter(col)
-            + ("$" if abs_row else "") + str(row)
-        )
+        text = sheet_prefix(name) + ("$" if abs_col else "") + col_letter(col) + ("$" if abs_row else "") + str(row)
         obj = cls._make(text, P_ATOM)
         obj.row, obj.col = row, col
         obj.abs_row, obj.abs_col, obj.sheet = abs_row, abs_col, name
@@ -120,11 +117,11 @@ class CellRef(Expr):
 
     def rel_text(self) -> str:
         """This cell's text without the sheet prefix, keeping any ``$`` markers."""
-        return (("$" if self.abs_col else "") + col_letter(self.col)
-                + ("$" if self.abs_row else "") + str(self.row))
+        return ("$" if self.abs_col else "") + col_letter(self.col) + ("$" if self.abs_row else "") + str(self.row)
 
     def _replace(
-        self, *,
+        self,
+        *,
         row: int | _Keep = _KEEP,
         col: int | _Keep = _KEEP,
         abs_row: bool | _Keep = _KEEP,
@@ -177,10 +174,7 @@ class CellRef(Expr):
         if self.sheet is not None:
             return self
         if self.home is None:
-            raise ValueError(
-                f"{self!r} has no home sheet to qualify with; "
-                "use .on(sheet) to name one explicitly"
-            )
+            raise ValueError(f"{self!r} has no home sheet to qualify with; use .on(sheet) to name one explicitly")
         return self._replace(sheet=self.home)
 
     def bare(self) -> CellRef:
@@ -238,27 +232,38 @@ class RangeRef(Expr):
         return RangeRef(self.start, self.end, home=self.home)
 
     def shift(self, rows: int = 0, cols: int = 0) -> RangeRef:
-        return RangeRef(_shift_part(self.start, rows, cols),
-                        _shift_part(self.end, rows, cols),
-                        sheet=self.sheet, home=self.home)
+        return RangeRef(
+            _shift_part(self.start, rows, cols), _shift_part(self.end, rows, cols), sheet=self.sheet, home=self.home
+        )
 
     # Convenience aggregates.  Imported lazily to keep functions.py free to import
     # this module for its own type checks.
-    def sum(self): return self._fn("SUM")
-    def average(self): return self._fn("AVERAGE")
+    def sum(self):
+        return self._fn("SUM")
+
+    def average(self):
+        return self._fn("AVERAGE")
 
     # NOTE: this shadows str.count, so RangeRef is the one Expr subclass where
     # "expr.count(substring)" raises instead of counting characters.  Kept because
     # .count() is documented API and renaming it would break callers; the
     # alternative, dispatching on the argument, would be worse.  Reach for
     # F.COUNT(rng) if the shadowing ever bites.
-    def count(self): return self._fn("COUNT")  # pyright: ignore[reportIncompatibleMethodOverride]
-    def counta(self): return self._fn("COUNTA")
-    def min(self): return self._fn("MIN")
-    def max(self): return self._fn("MAX")
+    def count(self):
+        return self._fn("COUNT")  # pyright: ignore[reportIncompatibleMethodOverride]
+
+    def counta(self):
+        return self._fn("COUNTA")
+
+    def min(self):
+        return self._fn("MIN")
+
+    def max(self):
+        return self._fn("MAX")
 
     def _fn(self, name: str):
         from .functions import Func
+
         return Func(name, self)
 
 
@@ -311,8 +316,7 @@ class Ref:
         return rng(*args, sheet=self.sheet, **kw)
 
 
-def cell(*args, sheet=None, home=None, abs_row: bool | None = None,
-         abs_col: bool | None = None) -> CellRef:
+def cell(*args, sheet=None, home=None, abs_row: bool | None = None, abs_col: bool | None = None) -> CellRef:
     """Build a :class:`CellRef` from ``"B3"`` or from ``(row, col)``.
 
     ``cell("$B$3")`` picks up the ``$`` markers; the ``abs_row``/``abs_col``
@@ -320,19 +324,21 @@ def cell(*args, sheet=None, home=None, abs_row: bool | None = None,
     """
     args = list(args)
     if args and not isinstance(args[0], (str, int)):
-        sheet = args.pop(0)     # a worksheet passed positionally
+        sheet = args.pop(0)  # a worksheet passed positionally
     if len(args) == 1 and isinstance(args[0], str):
         row, col, parsed_row, parsed_col = _parse_a1(args[0])
     elif len(args) == 2 and all(isinstance(a, int) for a in args):
         row, col = args
         parsed_row = parsed_col = False
     else:
-        raise TypeError('cell() takes either an A1 string or (row, col) integers')
+        raise TypeError("cell() takes either an A1 string or (row, col) integers")
     return CellRef(
-        row, col,
+        row,
+        col,
         abs_row=parsed_row if abs_row is None else abs_row,
         abs_col=parsed_col if abs_col is None else abs_col,
-        sheet=sheet, home=home,
+        sheet=sheet,
+        home=home,
     )
 
 

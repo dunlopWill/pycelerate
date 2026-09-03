@@ -65,8 +65,7 @@ class Sheet:
 
     def ref(self, key: str):
         """A reference into this sheet without writing anything."""
-        return (rng(key, home=self.title) if ":" in key
-                else cell(key, home=self.title))
+        return rng(key, home=self.title) if ":" in key else cell(key, home=self.title)
 
     __getitem__ = ref
 
@@ -80,6 +79,5 @@ class Sheet:
 
     def column(self, ref_or_letter) -> RangeRef:
         """The whole column a reference sits in: ``s.column(rev)`` -> ``B:B``."""
-        letter = (col_letter(ref_or_letter.col)
-                  if isinstance(ref_or_letter, CellRef) else ref_or_letter)
+        letter = col_letter(ref_or_letter.col) if isinstance(ref_or_letter, CellRef) else ref_or_letter
         return rng(f"{letter}:{letter}", home=self.title)

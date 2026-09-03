@@ -14,6 +14,7 @@ from pycelerate import F, Ref, cell, rng
 @pytest.fixture
 def roundtrip(tmp_path):
     """Write cells, save, reload, and hand back the reloaded worksheet."""
+
     def run(fill):
         wb = openpyxl.Workbook()
         ws = wb.active
@@ -22,6 +23,7 @@ def roundtrip(tmp_path):
         path = tmp_path / "book.xlsx"
         wb.save(path)
         return openpyxl.load_workbook(path).active
+
     return run
 
 
@@ -31,14 +33,14 @@ def test_expression_assigns_directly_and_is_stored_as_a_formula(roundtrip):
     def fill(ws):
         ws["B3"] = 1000
         ws["B4"] = 600
-        ws["B5"] = rev - cost              # no str(), no .formula
+        ws["B5"] = rev - cost  # no str(), no .formula
         ws["B6"] = (rev - cost) / rev
 
     ws = roundtrip(fill)
     assert ws["B5"].value == "=B3-B4"
     assert ws["B5"].data_type == "f"
     assert ws["B6"].value == "=(B3-B4)/B3"
-    assert ws["B3"].value == 1000          # plain values still behave normally
+    assert ws["B3"].value == 1000  # plain values still behave normally
 
 
 def test_functions_ranges_and_cross_sheet_survive(roundtrip):
@@ -61,7 +63,7 @@ def test_written_into_a_second_sheet(tmp_path):
     src = wb.active
     src.title = "Source Data"
     out = wb.create_sheet("Summary")
-    out["A1"] = Ref(src)["B3"] * 2         # Ref takes the worksheet object itself
+    out["A1"] = Ref(src)["B3"] * 2  # Ref takes the worksheet object itself
 
     path = tmp_path / "book.xlsx"
     wb.save(path)

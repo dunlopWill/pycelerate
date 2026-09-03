@@ -3,10 +3,19 @@ import pytest
 from pycelerate import CellRef, Ref, cell, col_index, col_letter, rng
 
 
-@pytest.mark.parametrize("index, letters", [
-    (1, "A"), (26, "Z"), (27, "AA"), (52, "AZ"), (53, "BA"),
-    (702, "ZZ"), (703, "AAA"), (16384, "XFD"),
-])
+@pytest.mark.parametrize(
+    "index, letters",
+    [
+        (1, "A"),
+        (26, "Z"),
+        (27, "AA"),
+        (52, "AZ"),
+        (53, "BA"),
+        (702, "ZZ"),
+        (703, "AAA"),
+        (16384, "XFD"),
+    ],
+)
 def test_column_boundaries(index, letters):
     assert col_letter(index) == letters
     assert col_index(letters) == index
@@ -33,7 +42,7 @@ def test_absolute_markers():
     assert str(cell("B3").abs()) == "=$B$3"
     assert str(cell("B3").abs_r()) == "=B$3"
     assert str(cell("B3").abs_c()) == "=$B3"
-    assert str(cell("$B$3")) == "=$B$3"       # parsed from the string
+    assert str(cell("$B$3")) == "=$B$3"  # parsed from the string
     assert str(cell("$B$3").rel()) == "=B3"
     assert str(cell("B3", abs_col=True)) == "=$B3"
 
@@ -46,13 +55,16 @@ def test_offset_crosses_column_z():
     assert str(cell("$B$3").offset(rows=2)) == "=$B$5"
 
 
-@pytest.mark.parametrize("name, expected", [
-    ("Data", "Data!B3"),
-    ("Source Data", "'Source Data'!B3"),
-    ("2024", "'2024'!B3"),
-    ("P&L", "'P&L'!B3"),
-    ("Bob's Sheet", "'Bob''s Sheet'!B3"),
-])
+@pytest.mark.parametrize(
+    "name, expected",
+    [
+        ("Data", "Data!B3"),
+        ("Source Data", "'Source Data'!B3"),
+        ("2024", "'2024'!B3"),
+        ("P&L", "'P&L'!B3"),
+        ("Bob's Sheet", "'Bob''s Sheet'!B3"),
+    ],
+)
 def test_sheet_quoting(name, expected):
     assert cell("B3", sheet=name).text == expected
 

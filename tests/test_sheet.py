@@ -41,7 +41,7 @@ def test_the_coordinate_is_never_typed_twice(s):
 
 def test_same_sheet_references_stay_unqualified(s):
     rev, cost = s.put("B2", 1000), s.put("B3", 600)
-    assert str(rev - cost) == "=B2-B3"       # not "=Model!B2-Model!B3"
+    assert str(rev - cost) == "=B2-B3"  # not "=Model!B2-Model!B3"
 
 
 def test_crossing_sheets_supplies_the_name_for_you(wb):

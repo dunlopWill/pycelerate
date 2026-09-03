@@ -22,32 +22,39 @@ C = cell("A1")
 
 # -- arity ----------------------------------------------------------------------
 
-@pytest.mark.parametrize("build, message", [
-    (lambda: F.SUMIF(R), "SUMIF takes 2 to 3 arguments, got 1"),  # pyright: ignore[reportCallIssue]
-    (lambda: F.SUMIF(R, ">5", R, "extra"), "SUMIF takes 2 to 3 arguments, got 4"),  # pyright: ignore[reportCallIssue]
-    (lambda: F.SUM(), "SUM takes at least 1 argument, got 0"),  # pyright: ignore[reportCallIssue]
-    (lambda: F.ROUND(C), "ROUND takes exactly 2 arguments, got 1"),  # pyright: ignore[reportCallIssue]
-    (lambda: F.TODAY(C), "TODAY takes exactly 0 arguments, got 1"),  # pyright: ignore[reportCallIssue]
-    (lambda: F.VLOOKUP(C, R), "VLOOKUP takes 3 to 4 arguments, got 2"),  # pyright: ignore[reportCallIssue]
-    (lambda: F.COUNTIF(R), "COUNTIF takes exactly 2 arguments, got 1"),  # pyright: ignore[reportCallIssue]
-])
+
+@pytest.mark.parametrize(
+    "build, message",
+    [
+        (lambda: F.SUMIF(R), "SUMIF takes 2 to 3 arguments, got 1"),  # pyright: ignore[reportCallIssue]
+        (lambda: F.SUMIF(R, ">5", R, "extra"), "SUMIF takes 2 to 3 arguments, got 4"),  # pyright: ignore[reportCallIssue]
+        (lambda: F.SUM(), "SUM takes at least 1 argument, got 0"),  # pyright: ignore[reportCallIssue]
+        (lambda: F.ROUND(C), "ROUND takes exactly 2 arguments, got 1"),  # pyright: ignore[reportCallIssue]
+        (lambda: F.TODAY(C), "TODAY takes exactly 0 arguments, got 1"),  # pyright: ignore[reportCallIssue]
+        (lambda: F.VLOOKUP(C, R), "VLOOKUP takes 3 to 4 arguments, got 2"),  # pyright: ignore[reportCallIssue]
+        (lambda: F.COUNTIF(R), "COUNTIF takes exactly 2 arguments, got 1"),  # pyright: ignore[reportCallIssue]
+    ],
+)
 def test_wrong_argument_count_raises(build, message):
     with pytest.raises(TypeError, match=message.replace("(", r"\(")):
         build()
 
 
-@pytest.mark.parametrize("build", [
-    lambda: F.SUMIF(R, ">5"),
-    lambda: F.SUMIF(R, ">5", rng("B:B")),
-    lambda: F.SUM(C),
-    lambda: F.SUM(C, C, C, C, C),
-    lambda: F.TODAY(),
-    lambda: F.ROW(),
-    lambda: F.ROW(C),
-    lambda: F.VLOOKUP(C, rng("A:D"), 3),
-    lambda: F.VLOOKUP(C, rng("A:D"), 3, False),
-    lambda: F.XLOOKUP(C, R, R),
-])
+@pytest.mark.parametrize(
+    "build",
+    [
+        lambda: F.SUMIF(R, ">5"),
+        lambda: F.SUMIF(R, ">5", rng("B:B")),
+        lambda: F.SUM(C),
+        lambda: F.SUM(C, C, C, C, C),
+        lambda: F.TODAY(),
+        lambda: F.ROW(),
+        lambda: F.ROW(C),
+        lambda: F.VLOOKUP(C, rng("A:D"), 3),
+        lambda: F.VLOOKUP(C, rng("A:D"), 3, False),
+        lambda: F.XLOOKUP(C, R, R),
+    ],
+)
 def test_valid_calls_are_untouched(build):
     assert str(build()).startswith("=")
 
@@ -68,8 +75,7 @@ def test_check_false_is_the_escape_hatch():
 def test_unknown_names_are_never_arity_checked():
     # The open set is the point: an add-in can have any signature at all.
     assert str(F.SOME_ADDIN_FUNCTION()) == "=SOME_ADDIN_FUNCTION()"
-    assert str(F.BLOOMBERG_BDP(C, "PX_LAST", 1, 2, 3)) == \
-        '=BLOOMBERG_BDP(A1,"PX_LAST",1,2,3)'
+    assert str(F.BLOOMBERG_BDP(C, "PX_LAST", 1, 2, 3)) == '=BLOOMBERG_BDP(A1,"PX_LAST",1,2,3)'
 
 
 def test_shifting_a_call_does_not_re_check_it():
@@ -85,26 +91,33 @@ def test_arity_is_case_insensitive():
 
 # -- spelling ---------------------------------------------------------------------
 
-@pytest.mark.parametrize("build, suggestion", [
-    (lambda: F.SUMIFF(R, ">5"), "SUMIF"),
-    (lambda: F.VLOOOKUP(C, R, 3), "VLOOKUP"),
-    (lambda: F.AVERGE(R), "AVERAGE"),
-    (lambda: F.IFERRORR(C, 0), "IFERROR"),
-    (lambda: F.XLOOKUPP(C, R, R), "XLOOKUP"),
-])
+
+@pytest.mark.parametrize(
+    "build, suggestion",
+    [
+        (lambda: F.SUMIFF(R, ">5"), "SUMIF"),
+        (lambda: F.VLOOOKUP(C, R, 3), "VLOOKUP"),
+        (lambda: F.AVERGE(R), "AVERAGE"),
+        (lambda: F.IFERRORR(C, 0), "IFERROR"),
+        (lambda: F.XLOOKUPP(C, R, R), "XLOOKUP"),
+    ],
+)
 def test_near_miss_names_warn_with_a_suggestion(build, suggestion):
     with pytest.warns(UnknownFunctionWarning, match=suggestion):
         build()
 
 
-@pytest.mark.parametrize("build", [
-    lambda: F.SOME_ADDIN_FUNCTION(C),
-    lambda: F.BLOOMBERG_BDP(C, "PX_LAST"),
-    lambda: F.MY__CUSTOM__THING(C),
-    lambda: F.SUM(R),
-    lambda: F.XLOOKUP(C, R, R),
-    lambda: F.STDEV__S(R),
-])
+@pytest.mark.parametrize(
+    "build",
+    [
+        lambda: F.SOME_ADDIN_FUNCTION(C),
+        lambda: F.BLOOMBERG_BDP(C, "PX_LAST"),
+        lambda: F.MY__CUSTOM__THING(C),
+        lambda: F.SUM(R),
+        lambda: F.XLOOKUP(C, R, R),
+        lambda: F.STDEV__S(R),
+    ],
+)
 def test_names_that_must_not_warn(build):
     """A false warning on a legitimate add-in name is worse than a missed typo."""
     with warnings.catch_warnings():
@@ -125,6 +138,7 @@ def test_check_false_silences_the_warning():
 
 
 # -- the tables themselves ---------------------------------------------------------
+
 
 def test_arity_bounds_are_coherent():
     for name, (low, high) in _ARITY.items():

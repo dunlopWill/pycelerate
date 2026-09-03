@@ -16,22 +16,34 @@ from decimal import Decimal
 from typing import Self
 
 __all__ = [
-    "Expr", "BinOp", "UnaryOp", "Lit", "Raw",
-    "P_CMP", "P_CONCAT", "P_ADD", "P_MUL", "P_POW", "P_PCT", "P_NEG", "P_REF", "P_ATOM",
+    "Expr",
+    "BinOp",
+    "UnaryOp",
+    "Lit",
+    "Raw",
+    "P_CMP",
+    "P_CONCAT",
+    "P_ADD",
+    "P_MUL",
+    "P_POW",
+    "P_PCT",
+    "P_NEG",
+    "P_REF",
+    "P_ATOM",
 ]
 
 # Excel operator precedence, loosest first.  Reference operators bind tightest and
 # comparisons loosest; note that unary minus binds *tighter* than "^", which is where
 # Excel and Python disagree.
-P_CMP = 1       # = <> < <= > >=
-P_CONCAT = 2    # &
-P_ADD = 3       # + -
-P_MUL = 4       # * /
-P_POW = 5       # ^
-P_PCT = 6       # postfix %
-P_NEG = 7       # unary -
-P_REF = 8       # : range
-P_ATOM = 9      # literals, cell refs, function calls
+P_CMP = 1  # = <> < <= > >=
+P_CONCAT = 2  # &
+P_ADD = 3  # + -
+P_MUL = 4  # * /
+P_POW = 5  # ^
+P_PCT = 6  # postfix %
+P_NEG = 7  # unary -
+P_REF = 8  # : range
+P_ATOM = 9  # literals, cell refs, function calls
 
 # Operators where "a op (b op c)" differs from "(a op b) op c", so an equal-precedence
 # right operand has to be parenthesised.  "+", "*" and "&" are left out: they regroup
@@ -92,23 +104,48 @@ class Expr(str):
         return self
 
     # -- arithmetic -------------------------------------------------------------
-    def __add__(self, other): return BinOp("+", self, other, P_ADD)
-    def __radd__(self, other): return BinOp("+", other, self, P_ADD)
-    def __sub__(self, other): return BinOp("-", self, other, P_ADD)
-    def __rsub__(self, other): return BinOp("-", other, self, P_ADD)
-    def __mul__(self, other): return BinOp("*", self, other, P_MUL)
-    def __rmul__(self, other): return BinOp("*", other, self, P_MUL)
-    def __truediv__(self, other): return BinOp("/", self, other, P_MUL)
-    def __rtruediv__(self, other): return BinOp("/", other, self, P_MUL)
-    def __pow__(self, other): return BinOp("^", self, other, P_POW)
-    def __rpow__(self, other): return BinOp("^", other, self, P_POW)
+    def __add__(self, other):
+        return BinOp("+", self, other, P_ADD)
+
+    def __radd__(self, other):
+        return BinOp("+", other, self, P_ADD)
+
+    def __sub__(self, other):
+        return BinOp("-", self, other, P_ADD)
+
+    def __rsub__(self, other):
+        return BinOp("-", other, self, P_ADD)
+
+    def __mul__(self, other):
+        return BinOp("*", self, other, P_MUL)
+
+    def __rmul__(self, other):
+        return BinOp("*", other, self, P_MUL)
+
+    def __truediv__(self, other):
+        return BinOp("/", self, other, P_MUL)
+
+    def __rtruediv__(self, other):
+        return BinOp("/", other, self, P_MUL)
+
+    def __pow__(self, other):
+        return BinOp("^", self, other, P_POW)
+
+    def __rpow__(self, other):
+        return BinOp("^", other, self, P_POW)
 
     # Excel's "&" is string concatenation, not boolean AND.  Use F.AND(...) for that.
-    def __and__(self, other): return BinOp("&", self, other, P_CONCAT)
-    def __rand__(self, other): return BinOp("&", other, self, P_CONCAT)
+    def __and__(self, other):
+        return BinOp("&", self, other, P_CONCAT)
 
-    def __neg__(self): return UnaryOp("-", self)
-    def __pos__(self): return self
+    def __rand__(self, other):
+        return BinOp("&", other, self, P_CONCAT)
+
+    def __neg__(self):
+        return UnaryOp("-", self)
+
+    def __pos__(self):
+        return self
 
     def __mod__(self, other):
         raise TypeError(
@@ -125,12 +162,23 @@ class Expr(str):
     # -- comparisons ------------------------------------------------------------
     # Deliberately methods rather than operator overloads, so "==" and hash() keep
     # their native str behaviour and expressions stay usable as dict keys.
-    def eq(self, other): return BinOp("=", self, other, P_CMP)
-    def ne(self, other): return BinOp("<>", self, other, P_CMP)
-    def lt(self, other): return BinOp("<", self, other, P_CMP)
-    def le(self, other): return BinOp("<=", self, other, P_CMP)
-    def gt(self, other): return BinOp(">", self, other, P_CMP)
-    def ge(self, other): return BinOp(">=", self, other, P_CMP)
+    def eq(self, other):
+        return BinOp("=", self, other, P_CMP)
+
+    def ne(self, other):
+        return BinOp("<>", self, other, P_CMP)
+
+    def lt(self, other):
+        return BinOp("<", self, other, P_CMP)
+
+    def le(self, other):
+        return BinOp("<=", self, other, P_CMP)
+
+    def gt(self, other):
+        return BinOp(">", self, other, P_CMP)
+
+    def ge(self, other):
+        return BinOp(">=", self, other, P_CMP)
 
 
 def lit(value) -> Expr:
@@ -200,18 +248,13 @@ class BinOp(Expr):
 
     def __new__(cls, op: str, left, right, prec: int) -> BinOp:
         left, right = lit(left), lit(right)
-        text = (
-            left._operand(prec)
-            + op
-            + right._operand(prec, right=True, op=op)
-        )
+        text = left._operand(prec) + op + right._operand(prec, right=True, op=op)
         obj = cls._make(text, prec)
         obj.op, obj.left, obj.right = op, left, right
         return obj
 
     def shift(self, rows: int = 0, cols: int = 0) -> BinOp:
-        return BinOp(self.op, self.left.shift(rows, cols),
-                     self.right.shift(rows, cols), self._prec)
+        return BinOp(self.op, self.left.shift(rows, cols), self.right.shift(rows, cols), self._prec)
 
 
 class UnaryOp(Expr):

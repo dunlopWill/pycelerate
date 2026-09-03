@@ -36,8 +36,21 @@ except PackageNotFoundError:  # running from a source tree that was never instal
     __version__ = "0.0.0+unknown"
 
 __all__ = [
-    "cell", "rng", "Ref", "F", "Sheet",
-    "Expr", "CellRef", "RangeRef", "Func", "Lit", "Raw", "BinOp", "UnaryOp",
-    "lit", "col_letter", "col_index",
+    "cell",
+    "rng",
+    "Ref",
+    "F",
+    "Sheet",
+    "Expr",
+    "CellRef",
+    "RangeRef",
+    "Func",
+    "Lit",
+    "Raw",
+    "BinOp",
+    "UnaryOp",
+    "lit",
+    "col_letter",
+    "col_index",
     "__version__",
 ]
