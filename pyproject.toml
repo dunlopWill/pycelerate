@@ -4,24 +4,147 @@ version = "0.1.0"
 description = "Build Excel formulas with Python operators, for openpyxl"
 readme = "README.md"
 authors = [
-    { name = "inkie", email = "willmdunlop@gmail.com" }
+    { name = "Will Dunlop", email = "willmdunlop@gmail.com" }
 ]
-requires-python = ">=3.14"
+maintainers = [
+    { name = "Will Dunlop", email = "willmdunlop@gmail.com" }
+]
+license = "MIT"
+license-files = ["LICENSE"]
+keywords = ["excel", "openpyxl", "xlsx", "formula", "spreadsheet"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Office/Business :: Financial :: Spreadsheet",
+    "Typing :: Typed",
+]
+# 3.11 is the floor because of typing.Self in expr.py; nothing else here needs
+# more than 3.8, and every module carries `from __future__ import annotations`.
+requires-python = ">=3.11"
 dependencies = []
 
+[project.urls]
+homepage = "https://github.com/dunlopWill/pycelerate"
+documentation = "https://dunlopWill.github.io/pycelerate/"
+bugs = "https://github.com/dunlopWill/pycelerate/issues"
+changelog = "https://github.com/dunlopWill/pycelerate/releases"
 
 [dependency-groups]
 dev = [
+    { include-group = "lint" },
+    { include-group = "test" },
+    { include-group = "typecheck" },
+]
+lint = [
+    "ruff",
+]
+test = [
+    "coverage",
     "openpyxl>=3.1",
     "pytest>=8",
+]
+typecheck = [
+    "pyright",
+    "ty",
+]
+docs = [
+    "zensical",
+    "mkdocstrings-python",
 ]
 
 [build-system]
 requires = ["uv_build>=0.12.5,<0.13.0"]
 build-backend = "uv_build"
 
+[tool.uv]
+package = true
+default-groups = ["dev"]
+
 
 [tool.pytest.ini_options]
+testpaths = ["tests"]
 markers = [
     "slow: evaluates a workbook in headless LibreOffice; deselect with -m 'not slow'",
+]
+
+
+[tool.ruff]
+line-length = 120
+# `ruff format` is deliberately not used on this project -- see CLAUDE.md.  The
+# compact one-line methods in expr.py and refs.py are the intended style.
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # Pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+]
+
+[tool.ruff.lint.per-file-ignores]
+# pytest.importorskip has to run before the imports it guards.
+"tests/test_openpyxl_roundtrip.py" = ["E402"]
+"tests/test_recalc.py" = ["E402"]
+# Stub signatures are dense one-liners; wrapping them defeats the point.
+"*.pyi" = ["E501"]
+
+
+[tool.pyright]
+include = ["src", "tests"]
+pythonVersion = "3.11"
+
+# pyright is the authoritative checker -- the package ships py.typed, so its own
+# type errors surface in consumers' editors.  ty runs alongside it in CI.
+[tool.ty.environment]
+python-version = "3.11"
+
+# The deliberately-wrong calls here are the stubs working: each already carries a
+# `# pyright: ignore[reportCallIssue]`, which ty does not read.  Suppressing by
+# file beats a second ignore comment on lines that are already ~100 chars long.
+[[tool.ty.overrides]]
+include = ["tests/test_validation.py"]
+
+[tool.ty.overrides.rules]
+missing-argument = "ignore"
+too-many-positional-arguments = "ignore"
+
+# RangeRef.count deliberately shadows str.count; renaming it would break the API.
+[[tool.ty.overrides]]
+include = ["src/pycelerate/refs.py"]
+
+[tool.ty.overrides.rules]
+invalid-method-override = "ignore"
+
+
+[tool.coverage.run]
+# Branch coverage is off on purpose.  coverage.py reads each compact one-line
+# `def f(self, other): return ...` as an arc to the next def that never falls
+# through, so expr.py alone reports 26 phantom partial branches.  Line coverage
+# measures something real here; branch coverage measures the style.
+branch = false
+parallel = true
+source = ["src/pycelerate"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+fail_under = 90
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "if typing.TYPE_CHECKING:",
+    "@overload",
+    "@typing.overload",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+    "raise NotImplementedError",
+    "\\.\\.\\.",
 ]
